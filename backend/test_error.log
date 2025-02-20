@@ -1,0 +1,7 @@
+ ***ERROR: TOO MANY ATTEMPTS MADE FOR THIS INCREMENT
+ THE ANALYSIS HAS BEEN TERMINATED DUE TO EXCESSIVE ITERATIONS WITHOUT CONVERGENCE.
+ SUGGESTIONS:
+ - Reduce the time increment size
+ - Check the material properties for unrealistic values
+ - Refine the mesh in critical regions
+
