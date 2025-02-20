@@ -2,3 +2,17 @@
 backend/.env
 frontend/.env
 
+# Ignore Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore database files
+backend/errors.db
+
+# Ignore Node.js dependencies (if using React frontend)
+frontend/node_modules
+frontend/.next
+frontend/.cache
+
