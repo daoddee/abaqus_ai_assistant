@@ -1,0 +1,1 @@
+# abaqus_ai_assistant
