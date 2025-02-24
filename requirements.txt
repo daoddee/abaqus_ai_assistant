@@ -1,0 +1,9 @@
+streamlit
+requests
+openai
+fitz
+numpy
+pandas
+flask
+flask_cors
+
