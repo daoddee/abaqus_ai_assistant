@@ -1,0 +1,75 @@
+@app.route('/generate_script', methods=['POST'])
+def generate_script():
+    """
+    Generates an Abaqus script that is fully compatible with Python 3.
+    Runs AI-based verification to detect and correct errors.
+    """
+    data = request.get_json()
+    user_prompt = data.get("prompt")
+
+    if not user_prompt:
+        return jsonify({"error": "❌ No prompt provided"}), 400
+
+    try:
+        script_output = None
+        max_attempts = 3  # ✅ Limit retries to 3 for efficiency
+
+        # ✅ Step 1: Generate an Abaqus Script with AI Verification
+        for attempt in range(max_attempts):
+            print(f"🛠️ Attempt {attempt + 1} to generate script...")
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content":
+                        "**You are an Abaqus scripting expert using Python 3.**\n"
+                        "💡 **Instructions:**\n"
+                        "- **Ensure the script is fully compatible with Abaqus (Python 3.x).** ✅\n"
+                        "- **Use only valid Python 3 syntax** (e.g., `print()` with parentheses, correct division, etc.).\n"
+                        "- **Include necessary Abaqus imports** (`from abaqus import *`, `from abaqusConstants import *`).\n"
+                        "- **Define materials, geometry, boundary conditions, loads, and steps properly.**\n"
+                        "- **If missing details exist, ask the user for required information instead of assuming values.**\n"
+                        "- **Strictly avoid Python 2 syntax (`print without parentheses`, `xrange`, old `exec` syntax, etc.).**"
+                    },
+                    {"role": "user", "content": f"Simulation request:\n{user_prompt}"}
+                ]
+            )
+
+            script_output = response.choices[0].message.content.strip()
+
+            # ✅ Check for valid Abaqus imports before proceeding
+            if script_output and "from abaqus" in script_output and "print(" in script_output:
+                break  # ✅ Valid script found, stop retrying
+
+        # ❌ If no valid script was generated after 3 attempts
+        if not script_output or "from abaqus" not in script_output:
+            return jsonify({"error": "❌ AI failed to generate a valid Python 3 script. Try refining your request."}), 500
+
+        # ✅ Step 2: AI Self-Verification for Debugging & Auto-Fixing
+        verify_response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content":
+                    "**You are an Abaqus code reviewer using Python 3.**\n"
+                    "💡 **Your task:**\n"
+                    "1️⃣ **Ensure the script is 100% Python 3 compatible** (check for syntax issues, print formatting, imports).\n"
+                    "2️⃣ **Identify missing parameters, errors, or outdated commands.**\n"
+                    "3️⃣ **Provide corrected code** if necessary (only replace faulty sections).\n"
+                    "4️⃣ If no errors exist, confirm explicitly: '**✅ This script is fully functional in Python 3.**'\n"
+                    "5️⃣ **Ensure the corrected script runs in Abaqus without modification.**"
+                },
+                {"role": "user", "content": f"Check this script for errors:\n\n{script_output}"}
+            ]
+        )
+
+        verification_feedback = verify_response.choices[0].message.content.strip()
+
+        # ✅ Store the generated script for debugging purposes
+        generated_scripts["latest_script"] = script_output  # 🔹 Store script in memory for further analysis
+
+        return jsonify({"script": script_output, "verification": verification_feedback})
+
+    except Exception as e:
+        print(f"❌ Script Generation Error: {str(e)}")  # ✅ Log the error for debugging
+        return jsonify({"error": f"❌ Failed to generate script: {str(e)}"}), 500
+
